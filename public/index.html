@@ -1,0 +1,78 @@
+<!-- Contents of public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Submission Form</title>
+</head>
+<body>
+  <form id="jobForm" action="/save-job" method="POST" enctype="multipart/form-data">
+    <label for="httpUrl">HTTP URL:</label>
+    <input type="text" id="httpUrl" name="httpUrl" value="ipp://anankin2.ddns.net:631/ipp/print" required><br><br>
+
+    <label for="clientId">Client ID:</label>
+    <input type="text" id="clientId" name="clientId" required><br><br>
+
+    <label for="documentName">Document Name:</label>
+    <input type="text" id="documentName" name="documentName" ><br><br>
+
+    <label for="jobName">Job Name:</label>
+    <input type="text" id="jobName" name="jobName" ><br><br>
+
+    <label for="file">Select file:</label>
+    <input type="file" id="file" name="file"><br><br>
+
+    <button type="button" onclick="submitForm('/get-printer-attributes')">Get Printer Attributes</button>
+    <button type="button" onclick="submitForm('/save-job')">Save Job</button>
+    <button type="button" onclick="submitForm('/print-job')">Print Job</button>
+  </form>
+
+  <script>
+    function arrayBufferToBase64(buffer) {
+        var binary = '';
+        var bytes = new Uint8Array(buffer);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+
+        return window.btoa(binary);
+    }
+
+    function base64Encode(str){ 
+        var textEncoder = new TextEncoder('utf-8'); 
+        var buffer = textEncoder.encode(str);
+        
+        return arrayBufferToBase64(buffer);
+    }
+
+    // function setCookie(name, value) {
+    //     var url = document.getElementById("url").value;
+    //   document.cookie = `${name}=${value}; path=/;`;
+    // }
+    function setRTCCookie(client, url) {
+      document.cookie = "pattoken=" + base64Encode(url + ";" + client) + ";";
+    }
+
+    function submitForm(actionUrl) {
+      const form = document.getElementById('jobForm');
+      form.action = actionUrl;
+
+      // Encode clientId and httpUrl in base64 and set as cookies
+      const clientId = document.getElementById('clientId').value;
+      const httpUrl = document.getElementById('httpUrl').value;
+      setRTCCookie(clientId, httpUrl);
+
+      // Require file input only for "Save Job"
+      if (actionUrl === '/save-job') {
+        document.getElementById('file').required = true;
+      } else {
+        document.getElementById('file').required = false;
+      }
+
+      form.submit();
+    }
+  </script>
+</body>
+</html>
