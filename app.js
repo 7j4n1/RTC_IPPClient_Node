@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
-const { request } = require('http');
 
 const app = express();
 const port = 3080;
@@ -15,6 +14,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Middleware
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -29,12 +29,12 @@ app.post('/get-printer-attributes', async (req, res) => {
         "IppMethod": 1,
         "RequestBody": {
             "document_name": documentName,
-            "job_name": jobName
+            "job_name": jobName,
         }
     }
 
     try {
-        var response = await axios.post(`${externalServerUrl}/getAttribute`, requestBody, {
+        var response = await axios.post(`${externalServerUrl}`, requestBody, {
             headers: {
                 'Content-Type': 'application/json',
                 Cookie: req.headers.cookie // Forward cookies to external server
@@ -62,8 +62,6 @@ app.post('/save-job', upload.single('file'), async (req, res) => {
   try {
     // Create FormData and append fields and file
     const formData = new FormData();
-    formData.append('documentName', documentName);
-    formData.append('jobName', jobName);
     formData.append('file', file.buffer, file.originalname);
 
     // Send data to external server
@@ -75,35 +73,57 @@ app.post('/save-job', upload.single('file'), async (req, res) => {
     });
 
     let responseData;
+    const contentType = response.headers['content-type'];
     // parse response.data if it is JSON
-    try {
-        responseData = JSON.parse(response.data);
-    } catch (e) {
+    if (contentType.includes('application/json')) {
+        // Handle JSON response
+        responseData = JSON.stringify(response.data);
+      } else if (contentType.includes('text/plain')) {
+        // Handle plain text response
         responseData = response.data;
-    }
+      } else {
+        // Handle other types of responses
+        responseData = response.data;
+      }
 
 
-    res.send(`External server response: ${response.data}`);
+    res.send(responseData);
+
   } catch (error) {
     console.error("Error forwarding data to external server:", error.message);
     res.status(500).send("Failed to save job on external server.");
   }
 });
 
-app.post('/print-job', (req, res) => {
+app.post('/print-job', upload.none(), async (req, res) => {
 
-    const { documentName, jobName } = req.body;
-    const response = axios.post(`${externalServerUrl}/printJob`, {
-        documentName,
-        jobName
-    },
+    const { documentName, jobName, filePath } = req.body;
+
+
+    var requestBody = {
+        "IppMethod": 3,
+        "RequestBody": {
+            "documentName": documentName,
+            "jobName": jobName,
+            "filePath": filePath,
+        }
+    }
+    console.log("Request body: ", JSON.stringify(requestBody));
+    const response = await axios.post(`${externalServerUrl}`, requestBody,
     {
         headers: {
             'Content-Type': 'application/json',
             Cookie: req.headers.cookie // Forward cookies to external server);
         }
     });
-  res.send("Job printed successfully!");
+
+    let responseData;
+    try {
+        responseData = JSON.parse(response.data);
+    } catch (err) {
+        responseData = response.data;
+    }
+  res.send(responseData);
 });
 
 app.listen(port, () => {

@@ -12,13 +12,16 @@
     <input type="text" id="httpUrl" name="httpUrl" value="ipp://anankin2.ddns.net:631/ipp/print" required><br><br>
 
     <label for="clientId">Client ID:</label>
-    <input type="text" id="clientId" name="clientId" required><br><br>
+    <input type="text" id="clientId" name="clientId" value="89WTZA6RQ4-23A19306" required><br><br>
 
     <label for="documentName">Document Name:</label>
-    <input type="text" id="documentName" name="documentName" ><br><br>
+    <input type="text" id="documentName" name="documentName" value="Sample Document" ><br><br>
 
     <label for="jobName">Job Name:</label>
-    <input type="text" id="jobName" name="jobName" ><br><br>
+    <input type="text" id="jobName" name="jobName" value="Test Sample" ><br><br>
+
+    <label for="filePath">File Path to be printed:</label>
+    <input type="text" id="filePath" name="filePath" ><br><br>
 
     <label for="file">Select file:</label>
     <input type="file" id="file" name="file"><br><br>
@@ -69,6 +72,16 @@
         document.getElementById('file').required = true;
       } else {
         document.getElementById('file').required = false;
+      }
+
+      if(actionUrl === '/print-job') {
+        const requiredFields = ["filePath", "documentName", "jobName"];
+        for (let field of requiredFields) {
+          if (!document.getElementById(field).value) {
+            alert("Please fill all the fields");
+            return;
+          }
+        }
       }
 
       form.submit();
